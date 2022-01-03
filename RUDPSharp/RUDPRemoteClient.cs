@@ -62,9 +62,13 @@ namespace RUDPSharp
         {
             switch (packet.PacketType)  {
                 case PacketType.Connect:
-                    if (!isConnected && client.ConnetionRequested != null && client.ConnetionRequested(packet.RemoteEndPoint, packet.Data)) {
-                        isConnected = true;
-                        QueueOutgoing (packet.RemoteEndPoint, PacketType.Connect, Channel.Reliable, Encoding.ASCII.GetBytes ("h2ik"));
+                    if (!isConnected && client.ConnetionRequested != null) {
+                        var result = client.ConnetionRequested(packet.RemoteEndPoint, packet.Data);
+                        if (result.accept/*Should accept*/)
+                        {
+                            isConnected = true;
+                            QueueOutgoing(packet.RemoteEndPoint, PacketType.Connect, Channel.Reliable, Encoding.ASCII.GetBytes(result.key/*Return key*/));
+                        }
                     }
                     break;
                 case PacketType.Disconnect:

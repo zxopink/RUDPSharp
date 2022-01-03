@@ -23,7 +23,7 @@ namespace RUDPSharp
 
         public Func<EndPoint, byte [] , bool> DataReceived { get; set; }
 
-        public Func<EndPoint, byte [], bool> ConnetionRequested { get; set; }
+        public Func<EndPoint, byte [], (bool accept, string key)> ConnetionRequested { get; set; }
 
         public Action<EndPoint> Disconnected { get; set; }
 
@@ -52,6 +52,15 @@ namespace RUDPSharp
             // Connect to remote server.
             var endPoint = new IPEndPoint (ip, port);
             SendTo (endPoint, PacketType.Connect, Channel.Reliable, Encoding.ASCII.GetBytes ("h2ik"));
+            return true;
+        }
+        public bool Connect(string host, int port, string key)
+        {
+            if (!IPAddress.TryParse(host, out IPAddress ip))
+                return false;
+            // Connect to remote server.
+            var endPoint = new IPEndPoint(ip, port);
+            SendTo(endPoint, PacketType.Connect, Channel.Reliable, Encoding.ASCII.GetBytes(key));
             return true;
         }
 
