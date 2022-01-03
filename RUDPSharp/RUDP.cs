@@ -41,7 +41,7 @@ namespace RUDPSharp
         {
             this.port = port;
             socket.Listen (port);
-            poll = Task.Run (Poll, tokenSource.Token);
+            poll = Task.Run(Poll, tokenSource.Token);
             readSocket = Task.Run(ReadSocket, tokenSource.Token);
         }
 
@@ -137,6 +137,8 @@ namespace RUDPSharp
                     }
                 }
             } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -156,8 +158,9 @@ namespace RUDPSharp
                         remotes.TryRemove (d, out client);
                     Thread.Sleep(1);
                 }
-            } catch (TaskCanceledException){
-
+            } catch (TaskCanceledException e){
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
         }
 
@@ -171,13 +174,14 @@ namespace RUDPSharp
             socket.Complete ();
             tokenSource.Cancel ();
             if (poll != null) {
-                poll.Wait ();
-                poll.Dispose ();
+
+                poll.Wait();
+                poll.Dispose();
                 poll = null;
             }
             if (readSocket != null) {
-                readSocket.Wait ();
-                readSocket.Dispose ();
+                readSocket.Wait();
+                readSocket.Dispose();
                 readSocket = null;
             }
             if (socket != null){ 

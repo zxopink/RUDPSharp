@@ -14,12 +14,20 @@ namespace RUDPSharp
         public override PendingPacket QueueOutgoingPacket(EndPoint endPoint, Packet packet)
         {
             var pendingPacket = base.QueueOutgoingPacket (endPoint, packet);
-            acknowledgement.HandleOutgoingPackage(packet.Sequence, pendingPacket);
+            lock (acknowledgement)
+            {
+                acknowledgement.HandleOutgoingPackage(packet.Sequence, pendingPacket);
+            }
             return pendingPacket;
         }
         public override PendingPacket QueueIncomingPacket (EndPoint endPoint, Packet packet)
         {
-            if (!acknowledgement.HandleIncommingPacket(packet))
+            bool flag;
+            lock (acknowledgement)
+            {
+                flag = !acknowledgement.HandleIncommingPacket(packet);
+            }
+            if (flag)
             {
                 QueueOutgoingPacket(endPoint, new Packet(PacketType.Ack, packet.Channel, packet.Sequence, new byte[0]));
                 return base.QueueIncomingPacket (endPoint, packet);
@@ -30,8 +38,11 @@ namespace RUDPSharp
 
         public override IEnumerable<PendingPacket> GetPendingOutgoingPackets ()
         {
-            foreach (var p in acknowledgement.GetPacketsToResent())
-                yield return p;
+            lock (acknowledgement)
+            {
+                foreach (var p in acknowledgement.GetPacketsToResent())
+                    yield return p;
+            }
             foreach (var p in base.GetPendingOutgoingPackets())
                 yield return p;
         }

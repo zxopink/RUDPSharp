@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using static RUDPSharp.UnreliableChannel;
@@ -7,25 +8,26 @@ namespace RUDPSharp
 {
     class PacketAcknowledgement
     {
-        Dictionary<int, PendingPacket> sent = new Dictionary<int, PendingPacket>();
-        Queue<int> expired = new Queue<int> ();
+        ConcurrentDictionary<int, PendingPacket> sent = new ConcurrentDictionary<int, PendingPacket>();
+        ConcurrentQueue<int> expired = new ConcurrentQueue<int>();
 
-        public TimeSpan PacketExpire {get ;set; } = TimeSpan.FromMilliseconds(500);
-        public int ResentCount  {get;set;} = 3;
+        public TimeSpan PacketExpire { get; set; } = TimeSpan.FromMilliseconds(500);
+        public int ResentCount { get; set; } = 3;
 
         public bool HandleIncommingPacket(Packet packet)
         {
             if (packet.PacketType == PacketType.Ack)
             {
                 // find the item in "sent" and remove it.
-                if (sent.TryGetValue(packet.Sequence, out PendingPacket pendingPacket))
-                {
-                    sent.Remove(packet.Sequence);
-                }
+                sent.TryRemove(packet.Sequence, out PendingPacket pendingPacket);
                 return true;
             }
             while (expired.Count > 0)
-                sent.Remove (expired.Dequeue ());
+            {
+                int removeVal;
+                expired.TryDequeue(out removeVal);
+                sent.TryRemove(removeVal, out PendingPacket pack);
+            }
             return false;
         }
 
@@ -33,7 +35,7 @@ namespace RUDPSharp
         {
             if (pendingPacket.PacketType != PacketType.Ack)
             {
-                sent.Add(sequence, pendingPacket);
+                sent.TryAdd(sequence, pendingPacket);
                 return true;
             }
             return false;
@@ -48,11 +50,13 @@ namespace RUDPSharp
                 {
                     s.Value.Sent = now;
                     s.Value.Attempts++;
-                    if (s.Value.Attempts > ResentCount) {
-                        expired.Enqueue (s.Key);
+                    if (s.Value.Attempts > ResentCount)
+                    {
+                        Console.WriteLine($"{s.Value.Sequence} has expired, dropping");
+                        expired.Enqueue(s.Key);
                         continue;
                     }
-                    Debug.WriteLine ($"Resending Packet {s.Value.Channel} {s.Value.Sequence}");
+                    Console.WriteLine($"Resending Packet {s.Value.Channel} {s.Value.Sequence}");
                     yield return s.Value;
                 }
             }

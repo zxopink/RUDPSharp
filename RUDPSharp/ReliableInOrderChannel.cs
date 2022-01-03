@@ -17,6 +17,9 @@ namespace RUDPSharp
 
         protected override bool CheckSequence(int packet, int sequence)
         {
+            if(sequence < 0)
+                Console.WriteLine("AYE WTH CRITICAL: " + sequence);
+            Console.WriteLine("override Sequence: " + sequence);
             return packet == sequence+1 || sequence == -1;
         }
 

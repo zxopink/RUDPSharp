@@ -8,8 +8,8 @@ using System.Collections.Concurrent;
 namespace RUDPSharp
 {
 public class UDPSocket : IDisposable {
-        Socket socketIP4;
-        Socket socketIP6;
+        protected Socket socketIP4;
+        protected Socket socketIP6;
         public const int BufferSize = 8192; //8192 is the default socket buffer size, Old value: 1024
         const int SioUdpConnreset = -1744830452; //SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12
         const int SocketTTL = 255;
@@ -60,7 +60,7 @@ public class UDPSocket : IDisposable {
             }
         }
 
-        bool Bind (Socket socket, EndPoint endPoint)
+        protected bool Bind (Socket socket, EndPoint endPoint)
         {
             try {
                 socket.Bind (endPoint);
